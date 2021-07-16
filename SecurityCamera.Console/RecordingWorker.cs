@@ -44,6 +44,8 @@ namespace SecurityCamera.Console
         private IOptions<EncodingOptions> EncodingOptions { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
+        private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
+
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             // set up encoding
@@ -56,28 +58,6 @@ namespace SecurityCamera.Console
                 "WMV" => MediaEncodingProfile.CreateWmv(encodingOptions.Quality),
                 _ => throw new NotSupportedException($"Encoding format '{encodingOptions.Format}' is not supported.")
             };
-
-            // timestamp
-            var now = DateTimeOffset.Now;
-            Logger.LogInformation($"Current timestamp: {now}");
-
-            // create blob
-            Logger.LogInformation($"Initializing blob...");
-            var blobsOptions = BlobsOptions.Value;
-            var container = BlobServiceClient.GetBlobContainerClient(blobsOptions.ContainerName);
-            await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
-            var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
-            Logger.LogInformation($"Blob: {blob.Uri}");
-            var httpHeaders = new BlobHttpHeaders
-            {
-                ContentType = "video/mp4",
-            };
-            await using var stream = await blob.OpenWriteAsync(overwrite: false, new()
-            {
-                HttpHeaders = httpHeaders,
-                BufferSize = blobsOptions.BufferSize,
-            }, cancellationToken);
-            using var randomAccessStream = stream.AsRandomAccessStream();
 
             // record
             Logger.LogInformation($"Initializing media capture...");
@@ -101,34 +81,86 @@ namespace SecurityCamera.Console
                 faceDetectionEffect.Enabled = true;
             }
 
-            // start
-            Logger.LogInformation($"Starting recording...");
-            await capture.StartRecordToStreamAsync(profile, randomAccessStream);
+            // timestamp
+            var now = DateTimeOffset.Now;
+            var started = now;
+            Logger.LogInformation($"Current timestamp: {now}");
 
-            // record
-            Logger.LogInformation($"Recording started.");
-            await Task.Delay(RecordingOptions.Value.MaximumRecordTime ?? TimeSpan.FromMilliseconds(-1), cancellationToken);
+            // create blob
+            Logger.LogInformation($"Initializing blob container...");
+            var blobsOptions = BlobsOptions.Value;
+            var container = BlobServiceClient.GetBlobContainerClient(blobsOptions.ContainerName);
+            await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
 
-            // stop
-            Logger.LogInformation($"Stopping recording...");
-            var result = await capture.StopRecordWithResultAsync();
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                // timestamp
+                now = DateTimeOffset.Now;
+                Logger.LogInformation($"Current timestamp: {now}");
+
+                // create blob
+                Logger.LogInformation($"Initializing blob...");
+                var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
+                Logger.LogInformation($"Blob: {blob.Uri}");
+                var httpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "video/mp4",
+                };
+                await using var stream = await blob.OpenWriteAsync(overwrite: false, new()
+                {
+                    HttpHeaders = httpHeaders,
+                    BufferSize = blobsOptions.BufferSize,
+                }, cancellationToken);
+                using var randomAccessStream = stream.AsRandomAccessStream();
+
+                // start
+                Logger.LogInformation($"Starting recording...");
+                await capture.StartRecordToStreamAsync(profile, randomAccessStream);
+
+                // record
+                Logger.LogInformation($"Recording started.");
+                var recordingOptions = RecordingOptions.Value;
+                var remainingTime = Infinity;
+                if (recordingOptions.ChunkSize is TimeSpan chunkSize)
+                {
+                    remainingTime = chunkSize;
+                }
+                if (recordingOptions.MaximumRecordTime is TimeSpan maximumTime)
+                {
+                    var maximumRemainingTime = started + maximumTime - now;
+                    if (maximumRemainingTime < remainingTime)
+                    {
+                        remainingTime = maximumRemainingTime;
+                    }
+                }
+                await Task.Delay(remainingTime, cancellationToken);
+
+                // stop
+                Logger.LogInformation($"Stopping recording...");
+                var result = await capture.StopRecordWithResultAsync();
+                Logger.LogInformation($"Recording stopped, duration: '{result.RecordDuration}'.");
+
+                // flush
+                await randomAccessStream.FlushAsync();
+                await stream.FlushAsync();
+            }
 
             // cleanup
+            Logger.LogInformation($"Cleaning up...");
             if (faceDetectionOptions.IsEnabled)
             {
                 faceDetectionEffect!.Enabled = false;
                 faceDetectionEffect.FaceDetected -= OnFaceDetected;
                 await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
             }
-            await randomAccessStream.FlushAsync();
-            await stream.FlushAsync();
-            Logger.LogInformation($"Recording stopped. Recorded '{result.RecordDuration}'.");
+
+            Logger.LogInformation($"Total run time: {DateTimeOffset.Now - started}");
         }
 
         private void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
             var frame = args.ResultFrame;
-            Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {frame.SystemRelativeTime}");
+            Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {DateTimeOffset.Now} (relative: {frame.SystemRelativeTime})");
         }
     }
 }

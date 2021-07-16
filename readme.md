@@ -15,6 +15,7 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `DetectionMode`: any member of [FaceDetectionMode](https://docs.microsoft.com/en-us/uwp/api/windows.media.core.facedetectionmode) enum (default `"HighPerformance"`)
   - `DesiredDetectionInterval`: the time span for which face detection should be performed (default `"00:00:00.500"`)
 - `Recording`
+  - `ChunkSize`: size of video chunks (default `"00:10:00"`)
   - `MaximumRecordTime`: maximum time to record (default `null`)
 - `Blobs`
   - **`ConnectionString`**: the connection string for the Storage Account
