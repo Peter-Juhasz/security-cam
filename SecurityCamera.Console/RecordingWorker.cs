@@ -65,7 +65,9 @@ namespace SecurityCamera.Console
             Logger.LogInformation($"Initializing blob...");
             var blobsOptions = BlobsOptions.Value;
             var container = BlobServiceClient.GetBlobContainerClient(blobsOptions.ContainerName);
-            var blob = container.GetBlockBlobClient($"{now:yyyy/MM/dd/HH-mm-ss}.mp4");
+            await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
+            var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
+            Logger.LogInformation($"Blob: {blob.Uri}");
             var httpHeaders = new BlobHttpHeaders
             {
                 ContentType = "video/mp4",
@@ -73,6 +75,7 @@ namespace SecurityCamera.Console
             await using var stream = await blob.OpenWriteAsync(overwrite: false, new()
             {
                 HttpHeaders = httpHeaders,
+                BufferSize = blobsOptions.BufferSize,
             }, cancellationToken);
             using var randomAccessStream = stream.AsRandomAccessStream();
 
@@ -82,17 +85,21 @@ namespace SecurityCamera.Console
             await capture.InitializeAsync();
 
             // face detection
-            Logger.LogInformation($"Initializing face detection...");
             var faceDetectionOptions = FaceDetectionOptions.Value;
-            var faceDetectionEffectDefinition = new FaceDetectionEffectDefinition
+            FaceDetectionEffect? faceDetectionEffect = null;
+            if (faceDetectionOptions.IsEnabled)
             {
-                DetectionMode = faceDetectionOptions.DetectionMode,
-                SynchronousDetectionEnabled = false,
-            };
-            var faceDetectionEffect = (FaceDetectionEffect)await capture.AddVideoEffectAsync(faceDetectionEffectDefinition, MediaStreamType.VideoRecord);
-            faceDetectionEffect.DesiredDetectionInterval = faceDetectionOptions.DesiredDetectionInterval;
-            faceDetectionEffect.FaceDetected += OnFaceDetected;
-            faceDetectionEffect.Enabled = true;
+                Logger.LogInformation($"Initializing face detection...");
+                var faceDetectionEffectDefinition = new FaceDetectionEffectDefinition
+                {
+                    DetectionMode = faceDetectionOptions.DetectionMode,
+                    SynchronousDetectionEnabled = false,
+                };
+                faceDetectionEffect = (FaceDetectionEffect)await capture.AddVideoEffectAsync(faceDetectionEffectDefinition, MediaStreamType.VideoRecord);
+                faceDetectionEffect.DesiredDetectionInterval = faceDetectionOptions.DesiredDetectionInterval;
+                faceDetectionEffect.FaceDetected += OnFaceDetected;
+                faceDetectionEffect.Enabled = true;
+            }
 
             // start
             Logger.LogInformation($"Starting recording...");
@@ -107,9 +114,12 @@ namespace SecurityCamera.Console
             var result = await capture.StopRecordWithResultAsync();
 
             // cleanup
-            faceDetectionEffect.Enabled = false;
-            faceDetectionEffect.FaceDetected -= OnFaceDetected;
-            await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
+            if (faceDetectionOptions.IsEnabled)
+            {
+                faceDetectionEffect!.Enabled = false;
+                faceDetectionEffect.FaceDetected -= OnFaceDetected;
+                await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
+            }
             await randomAccessStream.FlushAsync();
             await stream.FlushAsync();
             Logger.LogInformation($"Recording stopped. Recorded '{result.RecordDuration}'.");

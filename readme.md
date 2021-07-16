@@ -13,9 +13,14 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
 - `FaceDetection`
   - `Enabled`: whether to enable face detection (default `true`)
   - `DetectionMode`: any member of [FaceDetectionMode](https://docs.microsoft.com/en-us/uwp/api/windows.media.core.facedetectionmode) enum (default `"HighPerformance"`)
-  - `DesiredDetectionInterval`: gets or sets the time span for which face detection should be performed (default `"00:00:00.500"`)
+  - `DesiredDetectionInterval`: the time span for which face detection should be performed (default `"00:00:00.500"`)
 - `Recording`
   - `MaximumRecordTime`: maximum time to record (default `null`)
+- `Blobs`
+  - **`ConnectionString`**: the connection string for the Storage Account
+  - `ContainerName`: the name of the container to upload blobs (default `"recordings"`)
+  - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MB`)
+  - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
 
 ## Tutorial
 ### How to record video in Windows
