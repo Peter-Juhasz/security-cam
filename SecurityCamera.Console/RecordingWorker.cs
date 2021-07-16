@@ -94,55 +94,66 @@ namespace SecurityCamera.Console
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                // timestamp
-                now = DateTimeOffset.Now;
-                Logger.LogInformation($"Current timestamp: {now}");
+                try
+                {
+                    // timestamp
+                    now = DateTimeOffset.Now;
+                    Logger.LogInformation($"Current timestamp: {now}");
 
-                // create blob
-                Logger.LogInformation($"Initializing blob...");
-                var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
-                Logger.LogInformation($"Blob: {blob.Uri}");
-                var httpHeaders = new BlobHttpHeaders
-                {
-                    ContentType = "video/mp4",
-                };
-                await using var stream = await blob.OpenWriteAsync(overwrite: false, new()
-                {
-                    HttpHeaders = httpHeaders,
-                    BufferSize = blobsOptions.BufferSize,
-                }, cancellationToken);
-                using var randomAccessStream = stream.AsRandomAccessStream();
-
-                // start
-                Logger.LogInformation($"Starting recording...");
-                await capture.StartRecordToStreamAsync(profile, randomAccessStream);
-
-                // record
-                Logger.LogInformation($"Recording started.");
-                var recordingOptions = RecordingOptions.Value;
-                var remainingTime = Infinity;
-                if (recordingOptions.ChunkSize is TimeSpan chunkSize)
-                {
-                    remainingTime = chunkSize;
-                }
-                if (recordingOptions.MaximumRecordTime is TimeSpan maximumTime)
-                {
-                    var maximumRemainingTime = started + maximumTime - now;
-                    if (maximumRemainingTime < remainingTime)
+                    // create blob
+                    Logger.LogInformation($"Initializing blob...");
+                    var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
+                    Logger.LogInformation($"Blob: {blob.Uri}");
+                    var httpHeaders = new BlobHttpHeaders
                     {
-                        remainingTime = maximumRemainingTime;
+                        ContentType = "video/mp4",
+                    };
+                    await using var stream = await blob.OpenWriteAsync(overwrite: false, new()
+                    {
+                        HttpHeaders = httpHeaders,
+                        BufferSize = blobsOptions.BufferSize,
+                    }, cancellationToken);
+                    using var randomAccessStream = stream.AsRandomAccessStream();
+
+                    // start
+                    Logger.LogInformation($"Starting recording...");
+                    await capture.StartRecordToStreamAsync(profile, randomAccessStream);
+
+                    // record
+                    Logger.LogInformation($"Recording started.");
+                    var recordingOptions = RecordingOptions.Value;
+                    var remainingTime = Infinity;
+                    if (recordingOptions.ChunkSize is TimeSpan chunkSize)
+                    {
+                        remainingTime = chunkSize;
                     }
+                    if (recordingOptions.MaximumRecordTime is TimeSpan maximumTime)
+                    {
+                        var maximumRemainingTime = started + maximumTime - now;
+                        if (maximumRemainingTime < remainingTime)
+                        {
+                            remainingTime = maximumRemainingTime;
+                        }
+                    }
+                    await Task.Delay(remainingTime, cancellationToken);
+
+                    // stop
+                    Logger.LogInformation($"Stopping recording...");
+                    var result = await capture.StopRecordWithResultAsync();
+                    Logger.LogInformation($"Recording stopped, duration: '{result.RecordDuration}'.");
+
+                    // flush
+                    await randomAccessStream.FlushAsync();
+                    await stream.FlushAsync();
                 }
-                await Task.Delay(remainingTime, cancellationToken);
-
-                // stop
-                Logger.LogInformation($"Stopping recording...");
-                var result = await capture.StopRecordWithResultAsync();
-                Logger.LogInformation($"Recording stopped, duration: '{result.RecordDuration}'.");
-
-                // flush
-                await randomAccessStream.FlushAsync();
-                await stream.FlushAsync();
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "An error occurred while recording. Retrying...");
+                }
             }
 
             // cleanup
