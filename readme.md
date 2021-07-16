@@ -22,6 +22,7 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `ContainerName`: the name of the container to upload blobs (default `"recordings"`)
   - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MB`)
   - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
+- `ApplicationInsights`: configure Application Insights
 
 ## Tutorial
 ### How to record video in Windows

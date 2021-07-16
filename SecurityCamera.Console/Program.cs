@@ -16,6 +16,13 @@ namespace SecurityCamera.Console
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
+                    // application insights
+                    services.AddApplicationInsightsTelemetryWorkerService(options =>
+                    {
+                        options.EnableAdaptiveSampling = false;
+                        options.EnableQuickPulseMetricStream = true;
+                    });
+
                     // azure
                     services.Configure<BlobsOptions>(context.Configuration.GetSection("Blobs"));
                     services.AddSingleton<BlobServiceClient>(sp => new(
