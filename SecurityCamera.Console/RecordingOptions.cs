@@ -4,6 +4,6 @@ namespace SecurityCamera.Console
 {
     class RecordingOptions
     {
-        public TimeSpan? MaximumRecordTime { get; set;  }
+        public TimeSpan? MaximumRecordTime { get; set; }
     }
 }

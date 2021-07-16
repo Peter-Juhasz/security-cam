@@ -66,7 +66,7 @@ Video processing and face detection is not easy at all, especially if we want to
 ```cs
 var definition = new FaceDetectionEffectDefinition
 {
-	DetectionMode = FaceDetectionMode.HighPerformance,
+    DetectionMode = FaceDetectionMode.HighPerformance,
 };
 var effect = await capture.AddVideoEffectAsync(definition, MediaStreamType.VideoRecord);
 effect.FaceDetected += OnFaceDetected; // subscribe to event

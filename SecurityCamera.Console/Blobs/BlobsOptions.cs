@@ -2,9 +2,9 @@
 {
     class BlobsOptions
     {
-        public string ConnectionString { get;set;  }
+        public string ConnectionString { get; set; } = null!;
 
-        public string ContainerName {  get; set; }
+        public string ContainerName { get; set; } = "recordings";
 
         public long? BufferSize { get; set; }
 
