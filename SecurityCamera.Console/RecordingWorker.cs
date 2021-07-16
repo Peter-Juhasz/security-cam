@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Windows.Media.Capture;
+using Windows.Media.Core;
+using Windows.Media.FaceAnalysis;
 using Windows.Media.MediaProperties;
 
 namespace SecurityCamera.Console
@@ -20,18 +22,24 @@ namespace SecurityCamera.Console
     {
         public RecordingWorker(
             BlobServiceClient blobServiceClient,
+            IOptions<RecordingOptions> recordingOptions,
+            IOptions<FaceDetectionOptions> faceDetectionOptions,
             IOptions<BlobsOptions> blobsOptions,
             IOptions<EncodingOptions> encodingOptions,
             ILogger<RecordingWorker> logger
         )
         {
             BlobServiceClient = blobServiceClient;
+            RecordingOptions = recordingOptions;
+            FaceDetectionOptions = faceDetectionOptions;
             BlobsOptions = blobsOptions;
             EncodingOptions = encodingOptions;
             Logger = logger;
         }
 
         private BlobServiceClient BlobServiceClient { get; }
+        private IOptions<RecordingOptions> RecordingOptions { get; }
+        private IOptions<FaceDetectionOptions> FaceDetectionOptions { get; }
         private IOptions<BlobsOptions> BlobsOptions { get; }
         private IOptions<EncodingOptions> EncodingOptions { get; }
         private ILogger<RecordingWorker> Logger { get; }
@@ -68,25 +76,49 @@ namespace SecurityCamera.Console
             }, cancellationToken);
             using var randomAccessStream = stream.AsRandomAccessStream();
 
-            // face detection
-            // TODO
-
             // record
             Logger.LogInformation($"Initializing media capture...");
             using var capture = new MediaCapture();
             await capture.InitializeAsync();
 
+            // face detection
+            Logger.LogInformation($"Initializing face detection...");
+            var faceDetectionOptions = FaceDetectionOptions.Value;
+            var faceDetectionEffectDefinition = new FaceDetectionEffectDefinition
+            {
+                DetectionMode = faceDetectionOptions.DetectionMode,
+                SynchronousDetectionEnabled = false,
+            };
+            var faceDetectionEffect = (FaceDetectionEffect)await capture.AddVideoEffectAsync(faceDetectionEffectDefinition, MediaStreamType.VideoRecord);
+            faceDetectionEffect.DesiredDetectionInterval = faceDetectionOptions.DesiredDetectionInterval;
+            faceDetectionEffect.FaceDetected += OnFaceDetected;
+            faceDetectionEffect.Enabled = true;
+
+            // start
             Logger.LogInformation($"Starting recording...");
             await capture.StartRecordToStreamAsync(profile, randomAccessStream);
 
+            // record
             Logger.LogInformation($"Recording started.");
-            await Task.Delay(TimeSpan.FromMilliseconds(-1), cancellationToken);
+            await Task.Delay(RecordingOptions.Value.MaximumRecordTime ?? TimeSpan.FromMilliseconds(-1), cancellationToken);
 
+            // stop
             Logger.LogInformation($"Stopping recording...");
             var result = await capture.StopRecordWithResultAsync();
+
+            // cleanup
+            faceDetectionEffect.Enabled = false;
+            faceDetectionEffect.FaceDetected -= OnFaceDetected;
+            await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
             await randomAccessStream.FlushAsync();
             await stream.FlushAsync();
             Logger.LogInformation($"Recording stopped. Recorded '{result.RecordDuration}'.");
+        }
+
+        private void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
+        {
+            var frame = args.ResultFrame;
+            Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {frame.SystemRelativeTime}");
         }
     }
 }

@@ -22,6 +22,9 @@ namespace SecurityCamera.Console
                         sp.GetRequiredService<IOptions<BlobsOptions>>().Value.ConnectionString
                     ));
 
+                    // face detection
+                    services.Configure<FaceDetectionOptions>(context.Configuration.GetSection("FaceDetection"));
+
                     // recording
                     services.Configure<EncodingOptions>(context.Configuration.GetSection("Encoding"));
                     services.Configure<RecordingOptions>(context.Configuration.GetSection("Recording"));
