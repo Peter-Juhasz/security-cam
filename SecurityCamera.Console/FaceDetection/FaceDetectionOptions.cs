@@ -6,7 +6,7 @@ namespace SecurityCamera.Console
 {
     class FaceDetectionOptions
     {
-        public bool IsEnabled { get; set; } = true;
+        public bool Enabled { get; set; } = true;
 
         public FaceDetectionMode DetectionMode { get; set; } = FaceDetectionMode.HighPerformance;
 

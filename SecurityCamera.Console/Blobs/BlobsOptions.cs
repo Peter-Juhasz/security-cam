@@ -1,4 +1,7 @@
-﻿namespace SecurityCamera.Console
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices.WindowsRuntime;
+
+namespace SecurityCamera.Console
 {
     class BlobsOptions
     {

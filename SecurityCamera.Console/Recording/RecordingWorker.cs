@@ -69,7 +69,7 @@ namespace SecurityCamera.Console
                 // face detection
                 var faceDetectionOptions = FaceDetectionOptions.Value;
                 FaceDetectionEffect? faceDetectionEffect = null;
-                if (faceDetectionOptions.IsEnabled)
+                if (faceDetectionOptions.Enabled)
                 {
                     Logger.LogInformation($"Initializing face detection...");
                     var faceDetectionEffectDefinition = new FaceDetectionEffectDefinition
@@ -115,7 +115,7 @@ namespace SecurityCamera.Console
                             HttpHeaders = httpHeaders,
                             BufferSize = blobsOptions.BufferSize,
                         }, cancellationToken);
-                        using var randomAccessStream = stream.AsRandomAccessStream();
+                        using var randomAccessStream = new BlobWriteRandomAccessStream(stream);
 
                         // start
                         Logger.LogInformation($"Starting recording...");
@@ -160,7 +160,7 @@ namespace SecurityCamera.Console
 
                 // cleanup
                 Logger.LogInformation($"Cleaning up...");
-                if (faceDetectionOptions.IsEnabled)
+                if (faceDetectionOptions.Enabled)
                 {
                     faceDetectionEffect!.Enabled = false;
                     faceDetectionEffect.FaceDetected -= OnFaceDetected;
