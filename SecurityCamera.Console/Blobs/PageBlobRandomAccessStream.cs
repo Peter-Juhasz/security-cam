@@ -1,7 +1,8 @@
 ﻿using Azure;
 using Azure.Storage;
-using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
+
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Buffers;
@@ -17,9 +18,9 @@ namespace SecurityCamera.Console
 {
     internal class PageBlobRandomAccessStream : IRandomAccessStream, IAsyncDisposable
     {
-        public PageBlobRandomAccessStream(PageBlobClient client, BlobsOptions options)
+        public PageBlobRandomAccessStream(PageBlobClient client, BlobsOptions options, ILogger<PageBlobRandomAccessStream> logger)
         {
-            _outputStream = new OutputStream(client, options);
+            _outputStream = new OutputStream(client, options, logger);
         }
 
         private OutputStream _outputStream;
@@ -65,14 +66,16 @@ namespace SecurityCamera.Console
 
         class OutputStream : IOutputStream, IAsyncDisposable
         {
-            public OutputStream(PageBlobClient client, BlobsOptions options)
+            public OutputStream(PageBlobClient client, BlobsOptions options, ILogger<PageBlobRandomAccessStream> logger)
             {
                 Client = client;
                 Options = options;
+                Logger = logger;
             }
 
             public PageBlobClient Client { get; }
             private BlobsOptions Options { get; }
+            private ILogger<PageBlobRandomAccessStream> Logger { get; }
 
             private Stream? _blobStream = null;
             private long _position = 0;
@@ -123,6 +126,7 @@ namespace SecurityCamera.Console
                 {
                     // resize
                     var newSize = (int)(_blobSize * Options.ResizeFactor);
+                    Logger.LogInformation($"Resizing blob to {newSize}...");
                     await Client.ResizeAsync(newSize, cancellationToken: c);
                     _blobSize = newSize;
                     await OpenAtPositionAsync(_position, c);
@@ -169,6 +173,8 @@ namespace SecurityCamera.Console
 
             private async Task EnsurePagePaddingAsync(CancellationToken c)
             {
+                Logger.LogTrace("Ensuring page padding...");
+
                 // no need to pad
                 if (_position % PageSizeInBytes == 0)
                 {
@@ -251,6 +257,7 @@ namespace SecurityCamera.Console
                     var optimalSize = Size + padding;
                     if (_blobSize != optimalSize)
                     {
+                        Logger.LogInformation($"Resizing blob to {optimalSize}...");
                         await Client.ResizeAsync(optimalSize);
                     }
                 }

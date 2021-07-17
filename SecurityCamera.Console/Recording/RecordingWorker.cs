@@ -8,14 +8,11 @@ using Microsoft.Extensions.Options;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Media.Core;
-using Windows.Media.FaceAnalysis;
 using Windows.Media.MediaProperties;
 using Windows.System.Display;
 
@@ -32,6 +29,7 @@ namespace SecurityCamera.Console
             IOptions<AudioEncodingOptions> audioEncodingOptions,
             IOptions<WakeOptions> wakeOptions,
             IEnumerable<IFaceDetectionSink> faceDetectionSinks,
+            ILogger<PageBlobRandomAccessStream> streamLogger,
             ILogger<RecordingWorker> logger
         )
         {
@@ -43,6 +41,7 @@ namespace SecurityCamera.Console
             AudioEncodingOptions = audioEncodingOptions;
             WakeOptions = wakeOptions;
             FaceDetectionSinks = faceDetectionSinks;
+            StreamLogger = streamLogger;
             Logger = logger;
         }
 
@@ -54,6 +53,7 @@ namespace SecurityCamera.Console
         private IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
         private IOptions<WakeOptions> WakeOptions { get; }
         private IEnumerable<IFaceDetectionSink> FaceDetectionSinks { get; }
+        private ILogger<PageBlobRandomAccessStream> StreamLogger { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
@@ -116,7 +116,10 @@ namespace SecurityCamera.Console
                 // record
                 Logger.LogInformation($"Initializing media capture...");
                 using var capture = new MediaCapture();
+                capture.Failed += OnCaptureFailed;
+                capture.RecordLimitationExceeded += OnCaptureRecordLimitationExceeded;
                 await capture.InitializeAsync();
+                capture.FocusChanged += OnCaptureFocusChanged;
 
                 // face detection
                 var faceDetectionOptions = FaceDetectionOptions.Value;
@@ -158,7 +161,7 @@ namespace SecurityCamera.Console
                         Logger.LogInformation($"Initializing blob...");
                         var blob = container.GetPageBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
                         Logger.LogInformation($"Blob: {blob.Uri}");
-                        await using var randomAccessStream = new PageBlobRandomAccessStream(blob, blobsOptions);
+                        await using var randomAccessStream = new PageBlobRandomAccessStream(blob, blobsOptions, StreamLogger);
 
                         // start
                         Logger.LogInformation($"Starting recording...");
@@ -209,6 +212,9 @@ namespace SecurityCamera.Console
                     faceDetectionEffect.FaceDetected -= OnFaceDetected;
                     await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
                 }
+                capture.RecordLimitationExceeded -= OnCaptureRecordLimitationExceeded;
+                capture.FocusChanged -= OnCaptureFocusChanged;
+                capture.Failed -= OnCaptureFailed;
 
                 Logger.LogInformation($"Total recording time: {TotalRecordingTime}");
                 Logger.LogInformation($"Total run time: {DateTimeOffset.Now - started}");
@@ -225,6 +231,21 @@ namespace SecurityCamera.Console
                     displayRequest.RequestRelease();
                 }
             }
+        }
+
+        private void OnCaptureRecordLimitationExceeded(MediaCapture sender)
+        {
+            Logger.LogWarning($"Record limitation exceeded.");
+        }
+
+        private void OnCaptureFocusChanged(MediaCapture sender, MediaCaptureFocusChangedEventArgs args)
+        {
+            Logger.LogInformation($"Focus changed to '{args.FocusState}'");
+        }
+
+        private void OnCaptureFailed(MediaCapture sender, MediaCaptureFailedEventArgs errorEventArgs)
+        {
+            Logger.LogError($"Media capture failed with error code {errorEventArgs.Code}: {errorEventArgs.Message}");
         }
 
         private async void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
