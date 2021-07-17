@@ -111,3 +111,7 @@ And then release:
 ```cs
 displayRequest.RequestRelease();
 ```
+
+## Known issues
+ - Wake: `DisplayRequest` requires STA
+ - Recording: recording is paused while changing blob
