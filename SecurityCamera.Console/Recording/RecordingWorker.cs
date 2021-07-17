@@ -253,6 +253,7 @@ namespace SecurityCamera.Console
             var frame = args.ResultFrame;
             if (frame.DetectedFaces.Count != _numberOfFacesDetected)
             {
+                _numberOfFacesDetected = frame.DetectedFaces.Count;
                 foreach (var sink in FaceDetectionSinks)
                 {
                     try
