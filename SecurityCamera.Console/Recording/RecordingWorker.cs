@@ -46,6 +46,8 @@ namespace SecurityCamera.Console
 
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
 
+        public TimeSpan TotalRecordingTime { get; private set; } = TimeSpan.Zero;
+
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             try
@@ -143,6 +145,7 @@ namespace SecurityCamera.Console
                         Logger.LogInformation($"Stopping recording...");
                         var result = await capture.StopRecordWithResultAsync();
                         Logger.LogInformation($"Recording stopped, duration: '{result.RecordDuration}'.");
+                        TotalRecordingTime += result.RecordDuration;
 
                         // flush
                         await randomAccessStream.FlushAsync();
@@ -167,6 +170,7 @@ namespace SecurityCamera.Console
                     await capture.ClearEffectsAsync(MediaStreamType.VideoRecord);
                 }
 
+                Logger.LogInformation($"Total recording time: {TotalRecordingTime}");
                 Logger.LogInformation($"Total run time: {DateTimeOffset.Now - started}");
             }
             catch (Exception ex)
