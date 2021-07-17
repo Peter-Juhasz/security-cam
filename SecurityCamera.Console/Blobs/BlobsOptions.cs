@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace SecurityCamera.Console
 {
@@ -12,5 +11,9 @@ namespace SecurityCamera.Console
         public long? BufferSize { get; set; }
 
         public string BlobNameFormat { get; set; } = "{0:yyyy/MM/dd/HH-mm-ss}.mp4";
+
+        public long InitialSizeHint { get; set; } = 30 * 1024 * 1024;
+
+        public double ResizeFactor { get; set; } = 2;
     }
 }

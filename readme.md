@@ -22,6 +22,8 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `ContainerName`: the name of the container to upload blobs (default `"recordings"`)
   - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MB`)
   - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
+  - `InitialSizeHint`: initial size of Page Blob
+  - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
 - `ApplicationInsights`: configure Application Insights
 
 ## Tutorial
@@ -76,7 +78,7 @@ effect.Enabled = true;
 ```
 
 ### Stream to Azure Blob Storage
-We can open a Block Blob to write as a `Stream`, so this way we can transfer the video seamlessly to Azure without buffering to disk or memory:
+We can open a Page Blob or a Block Blob to write as a `Stream`, so this way we can transfer the video seamlessly to Azure without buffering to disk or memory:
 ```cs
 var container = BlobServiceClient.GetBlobContainerClient(blobsOptions.ContainerName);
 var blob = container.GetBlockBlobClient($"{now:yyyy/MM/dd/HH-mm-ss}.mp4");
@@ -87,3 +89,5 @@ In order to use a `Stream` in Windows Runtime, we have to it wrap into a [IRando
 ```cs
 using var randomAccessStream = stream.AsRandomAccessStream();
 ```
+
+Howewer, some media encodings are not streaming compatible, because they require seeking, which is not supported by the Azure Storage library, so the case of streaming is not that straight-forward unfortunately. An implementation which works with Page Blobs, can seek and replace pages of the blob on-demand, can be found in [PageBlobRandomAccessStream](https://github.com/Peter-Juhasz/security-cam/blob/master/SecurityCamera.Console/Blobs/PageBlobRandomAccessStream.cs).

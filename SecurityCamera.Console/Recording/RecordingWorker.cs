@@ -106,18 +106,9 @@ namespace SecurityCamera.Console
 
                         // create blob
                         Logger.LogInformation($"Initializing blob...");
-                        var blob = container.GetBlockBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
+                        var blob = container.GetPageBlobClient(String.Format(blobsOptions.BlobNameFormat, now));
                         Logger.LogInformation($"Blob: {blob.Uri}");
-                        var httpHeaders = new BlobHttpHeaders
-                        {
-                            ContentType = "video/mp4",
-                        };
-                        await using var stream = await blob.OpenWriteAsync(overwrite: true, new()
-                        {
-                            HttpHeaders = httpHeaders,
-                            BufferSize = blobsOptions.BufferSize,
-                        }, cancellationToken);
-                        using var randomAccessStream = new BlobWriteRandomAccessStream(stream);
+                        await using var randomAccessStream = new PageBlobRandomAccessStream(blob, blobsOptions);
 
                         // start
                         Logger.LogInformation($"Starting recording...");
@@ -149,7 +140,6 @@ namespace SecurityCamera.Console
 
                         // flush
                         await randomAccessStream.FlushAsync();
-                        await stream.FlushAsync();
                     }
                     catch (OperationCanceledException)
                     {
