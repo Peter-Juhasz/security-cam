@@ -51,9 +51,9 @@ namespace SecurityCamera.Console
         private IOptions<FaceDetectionOptions> FaceDetectionOptions { get; }
         private IOptions<BlobsOptions> BlobsOptions { get; }
         private IOptions<VideoEncodingOptions> VideoEncodingOptions { get; }
-        public IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
-        public IOptions<WakeOptions> WakeOptions { get; }
-        public IEnumerable<IFaceDetectionSink> FaceDetectionSinks { get; }
+        private IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
+        private IOptions<WakeOptions> WakeOptions { get; }
+        private IEnumerable<IFaceDetectionSink> FaceDetectionSinks { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);

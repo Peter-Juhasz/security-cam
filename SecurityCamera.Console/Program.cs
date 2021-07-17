@@ -41,6 +41,12 @@ namespace SecurityCamera.Console
                         services.AddSingleton<SmsClient>(sp => new SmsClient(sp.GetRequiredService<IOptions<SmsOptions>>().Value.ConnectionString));
                         services.AddSingleton<IFaceDetectionSink, SmsFaceDetectionSink>();
                     }
+                    if (context.Configuration.GetSection("WebHook").Exists())
+                    {
+                        services.Configure<WebHookOptions>(context.Configuration.GetSection("WebHook"));
+                        services.AddHttpClient(nameof(WebHookFaceDetectionSink));
+                        services.AddSingleton<IFaceDetectionSink, WebHookFaceDetectionSink>();
+                    }
 
                     // wake
                     services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));

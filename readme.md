@@ -7,6 +7,7 @@ Run `SecurityCamera.Console.exe`.
 ### Configuration
 Configuration is stored in `appsettings.json` or can be added as CLI arguments.
 
+Recording
 - `Video`
   - `Format`: `"HEVC"` or `"MP4"` (default `"HEVC"`)
   - `Quality`: `"HD720p"`, `"HD1080p"`, `"Uhd2160p"` or any member of [VideoEncodingQuality](https://docs.microsoft.com/en-us/uwp/api/windows.media.mediaproperties.videoencodingquality) enum (default `"HD1080p"`)
@@ -16,10 +17,6 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `Enabled`: whether to enable audio recording (default `false`)
   - `Bitrate`: the average bit rate of the audio stream, in bits per second
   - `BitsPerSample`: the number of bits per audio sample
-- `FaceDetection`
-  - `Enabled`: whether to enable face detection (default `true`)
-  - `DetectionMode`: any member of [FaceDetectionMode](https://docs.microsoft.com/en-us/uwp/api/windows.media.core.facedetectionmode) enum (default `"HighPerformance"`)
-  - `DesiredDetectionInterval`: the time span for which face detection should be performed (default `"00:00:00.500"`)
 - `Recording`
   - `ChunkSize`: size of video chunks (default `"00:10:00"`)
   - `MaximumRecordTime`: maximum time to record (default `null`)
@@ -32,14 +29,24 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
 - `Wake`
   - `Enabled`: keep computer from sleep during recording (default: `true`)
+
+Alerts
+- `FaceDetection`
+  - `Enabled`: whether to enable face detection (default `true`)
+  - `DetectionMode`: any member of [FaceDetectionMode](https://docs.microsoft.com/en-us/uwp/api/windows.media.core.facedetectionmode) enum (default `"HighPerformance"`)
+  - `DesiredDetectionInterval`: the time span for which face detection should be performed (default `"00:00:00.500"`)
 - `Sms`
   - **`ConnectionString`**: connection string for Azure Communication Services
   - **`From`**: from number
   - **`To`**: array of to numbers
+- `WebHook`
+  - **`Url`**: url to call with POST
+
+Telemetry
 - `ApplicationInsights`: configure Application Insights
 
 ## Tutorial
-### How to record video in Windows
+### How to record video
 First, we need to create a [MediaEncodingProfile](https://docs.microsoft.com/en-us/uwp/api/windows.media.mediaproperties.mediaencodingprofile):
 ```cs
 var profile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.HD1080p);
@@ -59,7 +66,7 @@ await capture.StartRecordToStreamAsync(profile, stream);
 
 // capture video ...
 
-var result = await capture.StopRecordWithResultAsync();
+await capture.StopRecordWithResultAsync();
 ```
 
 ### How to detect faces
