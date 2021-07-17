@@ -24,6 +24,8 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
   - `InitialSizeHint`: initial size of Page Blob
   - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
+- `Wake`
+  - `Enabled`: keep computer from sleep during recording (default: `true`)
 - `ApplicationInsights`: configure Application Insights
 
 ## Tutorial
@@ -91,3 +93,15 @@ using var randomAccessStream = stream.AsRandomAccessStream();
 ```
 
 Howewer, some media encodings are not streaming compatible, because they require seeking, which is not supported by the Azure Storage library, so the case of streaming is not that straight-forward unfortunately. An implementation which works with Page Blobs, can seek and replace pages of the blob on-demand, can be found in [PageBlobRandomAccessStream](https://github.com/Peter-Juhasz/security-cam/blob/master/SecurityCamera.Console/Blobs/PageBlobRandomAccessStream.cs).
+
+### How to keep computer from sleep
+Normally, a device running a Windows Runtime app will dim the display (and eventually turn it off) to save battery life when the user is away, but video apps need to keep the screen on so the user can see the video. The [DisplayRequest](https://docs.microsoft.com/en-us/uwp/api/windows.system.display.displayrequest) class lets you tell Windows to keep the display turned on so the recording can continue.
+```cs
+var displayRequest = new DisplayRequest();
+displayRequest.RequestActive();
+```
+
+And then release:
+```cs
+displayRequest.RequestRelease();
+```

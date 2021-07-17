@@ -12,8 +12,4 @@
 		<PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.*" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Wake\" />
-	</ItemGroup>
-
 </Project>

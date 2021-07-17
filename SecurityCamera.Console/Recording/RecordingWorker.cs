@@ -10,11 +10,13 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 using Windows.Media.Capture;
 using Windows.Media.Core;
 using Windows.Media.FaceAnalysis;
 using Windows.Media.MediaProperties;
+using Windows.System.Display;
 
 namespace SecurityCamera.Console
 {
@@ -26,6 +28,7 @@ namespace SecurityCamera.Console
             IOptions<FaceDetectionOptions> faceDetectionOptions,
             IOptions<BlobsOptions> blobsOptions,
             IOptions<EncodingOptions> encodingOptions,
+            IOptions<WakeOptions> wakeOptions,
             ILogger<RecordingWorker> logger
         )
         {
@@ -34,6 +37,7 @@ namespace SecurityCamera.Console
             FaceDetectionOptions = faceDetectionOptions;
             BlobsOptions = blobsOptions;
             EncodingOptions = encodingOptions;
+            WakeOptions = wakeOptions;
             Logger = logger;
         }
 
@@ -42,6 +46,7 @@ namespace SecurityCamera.Console
         private IOptions<FaceDetectionOptions> FaceDetectionOptions { get; }
         private IOptions<BlobsOptions> BlobsOptions { get; }
         private IOptions<EncodingOptions> EncodingOptions { get; }
+        public IOptions<WakeOptions> WakeOptions { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
@@ -50,8 +55,18 @@ namespace SecurityCamera.Console
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            var wakeOptions = WakeOptions.Value;
+            DisplayRequest? displayRequest = null;
+
             try
             {
+                // prevent computer from sleep
+                if (wakeOptions.Enabled)
+                {
+                    displayRequest = new();
+                    displayRequest.RequestActive();
+                }
+
                 // set up encoding
                 Logger.LogInformation($"Initializing encoding...");
                 var encodingOptions = EncodingOptions.Value;
@@ -166,6 +181,14 @@ namespace SecurityCamera.Console
             catch (Exception ex)
             {
                 Logger.LogError(ex, "An unrecoverable error occurred.");
+            }
+            finally
+            {
+                // release display request
+                if (wakeOptions.Enabled)
+                {
+                    displayRequest.RequestRelease();
+                }
             }
         }
 

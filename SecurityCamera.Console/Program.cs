@@ -32,6 +32,9 @@ namespace SecurityCamera.Console
                     // face detection
                     services.Configure<FaceDetectionOptions>(context.Configuration.GetSection("FaceDetection"));
 
+                    // wake
+                    services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));
+
                     // recording
                     services.Configure<EncodingOptions>(context.Configuration.GetSection("Encoding"));
                     services.Configure<RecordingOptions>(context.Configuration.GetSection("Recording"));
