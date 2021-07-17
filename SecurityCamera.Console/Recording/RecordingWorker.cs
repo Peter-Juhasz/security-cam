@@ -10,7 +10,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 using Windows.Media.Capture;
 using Windows.Media.Core;
@@ -52,6 +51,8 @@ namespace SecurityCamera.Console
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
 
         public TimeSpan TotalRecordingTime { get; private set; } = TimeSpan.Zero;
+
+        private int _numberOfFacesDetected = 0;
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -195,7 +196,10 @@ namespace SecurityCamera.Console
         private void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
             var frame = args.ResultFrame;
-            Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {DateTimeOffset.Now} (relative: {frame.SystemRelativeTime})");
+            if (frame.DetectedFaces.Count != _numberOfFacesDetected)
+            {
+                Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {DateTimeOffset.Now} (relative: {frame.SystemRelativeTime})");
+            }
         }
     }
 }
