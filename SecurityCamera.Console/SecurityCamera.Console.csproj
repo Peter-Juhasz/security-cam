@@ -9,6 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.*" />
 		<PackageReference Include="Azure.Storage.Blobs" Version="12.*" />
+		<PackageReference Include="Azure.Communication.Sms" Version="1.*" />
 		<PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.*" />
 	</ItemGroup>
 

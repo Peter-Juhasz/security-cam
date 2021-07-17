@@ -234,7 +234,14 @@ namespace SecurityCamera.Console
             {
                 foreach (var sink in FaceDetectionSinks)
                 {
-                    await sink.OnFaceDetectionChangedAsync(frame, null);
+                    try
+                    {
+                        await sink.OnFaceDetectionChangedAsync(frame, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, $"Face detection sink of type '{sink.GetType()}' has failed.");
+                    }
                 }
             }
         }

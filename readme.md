@@ -32,6 +32,10 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
 - `Wake`
   - `Enabled`: keep computer from sleep during recording (default: `true`)
+- `Sms`
+  - **`ConnectionString`**: connection string for Azure Communication Services
+  - **`From`**: from number
+  - **`To`**: array of to numbers
 - `ApplicationInsights`: configure Application Insights
 
 ## Tutorial
@@ -112,6 +116,16 @@ And then release:
 displayRequest.RequestRelease();
 ```
 
+### How to send SMS
+You can use [Azure Communication Service](https://azure.microsoft.com/en-us/services/communication-services/) to send SMS:
+```cs
+var client = new SmsClient();
+await client.SendAsync(from, to, message);
+```
+
 ## Known issues
  - Wake: `DisplayRequest` requires STA
  - Recording: recording is paused while replacing blob chunk
+
+## Disclaimer
+This project is only for learning purposes. The author doesn't take any responsibility for this software. Do not use this solution for real-life use cases.

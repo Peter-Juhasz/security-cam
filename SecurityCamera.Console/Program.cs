@@ -1,5 +1,7 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure.Communication.Sms;
+using Azure.Storage.Blobs;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -33,6 +35,12 @@ namespace SecurityCamera.Console
                     services.Configure<FaceDetectionOptions>(context.Configuration.GetSection("FaceDetection"));
                     services.AddSingleton<IFaceDetectionSink, LoggerFaceDetectionSink>();
                     services.AddSingleton<IFaceDetectionSink, ApplicationInsightsFaceDetectionSink>();
+                    if (context.Configuration.GetSection("Sms").Exists())
+                    {
+                        services.Configure<SmsOptions>(context.Configuration.GetSection("Sms"));
+                        services.AddSingleton<SmsClient>(sp => new SmsClient(sp.GetRequiredService<IOptions<SmsOptions>>().Value.ConnectionString));
+                        services.AddSingleton<IFaceDetectionSink, SmsFaceDetectionSink>();
+                    }
 
                     // wake
                     services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));
