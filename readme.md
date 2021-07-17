@@ -114,4 +114,4 @@ displayRequest.RequestRelease();
 
 ## Known issues
  - Wake: `DisplayRequest` requires STA
- - Recording: recording is paused while changing blob
+ - Recording: recording is paused while replacing blob chunk

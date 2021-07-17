@@ -31,6 +31,8 @@ namespace SecurityCamera.Console
 
                     // face detection
                     services.Configure<FaceDetectionOptions>(context.Configuration.GetSection("FaceDetection"));
+                    services.AddSingleton<IFaceDetectionSink, LoggerFaceDetectionSink>();
+                    services.AddSingleton<IFaceDetectionSink, ApplicationInsightsFaceDetectionSink>();
 
                     // wake
                     services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));

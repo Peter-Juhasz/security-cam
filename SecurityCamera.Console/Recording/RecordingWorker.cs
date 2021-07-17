@@ -7,10 +7,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Media.Core;
 using Windows.Media.FaceAnalysis;
@@ -29,6 +31,7 @@ namespace SecurityCamera.Console
             IOptions<VideoEncodingOptions> videoEncodingOptions,
             IOptions<AudioEncodingOptions> audioEncodingOptions,
             IOptions<WakeOptions> wakeOptions,
+            IEnumerable<IFaceDetectionSink> faceDetectionSinks,
             ILogger<RecordingWorker> logger
         )
         {
@@ -39,6 +42,7 @@ namespace SecurityCamera.Console
             VideoEncodingOptions = videoEncodingOptions;
             AudioEncodingOptions = audioEncodingOptions;
             WakeOptions = wakeOptions;
+            FaceDetectionSinks = faceDetectionSinks;
             Logger = logger;
         }
 
@@ -49,6 +53,7 @@ namespace SecurityCamera.Console
         private IOptions<VideoEncodingOptions> VideoEncodingOptions { get; }
         public IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
         public IOptions<WakeOptions> WakeOptions { get; }
+        public IEnumerable<IFaceDetectionSink> FaceDetectionSinks { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
         private static readonly TimeSpan Infinity = TimeSpan.FromMilliseconds(-1);
@@ -222,12 +227,15 @@ namespace SecurityCamera.Console
             }
         }
 
-        private void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
+        private async void OnFaceDetected(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
             var frame = args.ResultFrame;
             if (frame.DetectedFaces.Count != _numberOfFacesDetected)
             {
-                Logger.LogInformation($"Faces detected: {frame.DetectedFaces.Count} at {DateTimeOffset.Now} (relative: {frame.SystemRelativeTime})");
+                foreach (var sink in FaceDetectionSinks)
+                {
+                    await sink.OnFaceDetectionChangedAsync(frame, null);
+                }
             }
         }
     }
