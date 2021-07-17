@@ -7,9 +7,15 @@ Run `SecurityCamera.Console.exe`.
 ### Configuration
 Configuration is stored in `appsettings.json` or can be added as CLI arguments.
 
-- `Encoding`
+- `Video`
   - `Format`: `"HEVC"` or `"MP4"` (default `"HEVC"`)
   - `Quality`: `"HD720p"`, `"HD1080p"`, `"Uhd2160p"` or any member of [VideoEncodingQuality](https://docs.microsoft.com/en-us/uwp/api/windows.media.mediaproperties.videoencodingquality) enum (default `"HD1080p"`)
+  - `Bitrate`: the average bit rate of the video stream, in bits per second
+  - `FrameRate`: the number of frames per second
+- `Audio`
+  - `Enabled`: whether to enable audio recording (default `false`)
+  - `Bitrate`: the average bit rate of the audio stream, in bits per second
+  - `BitsPerSample`: the number of bits per audio sample
 - `FaceDetection`
   - `Enabled`: whether to enable face detection (default `true`)
   - `DetectionMode`: any member of [FaceDetectionMode](https://docs.microsoft.com/en-us/uwp/api/windows.media.core.facedetectionmode) enum (default `"HighPerformance"`)
@@ -22,7 +28,7 @@ Configuration is stored in `appsettings.json` or can be added as CLI arguments.
   - `ContainerName`: the name of the container to upload blobs (default `"recordings"`)
   - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MB`)
   - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
-  - `InitialSizeHint`: initial size of Page Blob
+  - `InitialSizeHint`: initial size of Page Blob in bytes (default: 32 MiB)
   - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
 - `Wake`
   - `Enabled`: keep computer from sleep during recording (default: `true`)

@@ -2,10 +2,14 @@
 
 namespace SecurityCamera.Console
 {
-    class EncodingOptions
+    class VideoEncodingOptions
     {
         public string Format { get; set; } = "HEVC";
 
         public VideoEncodingQuality Quality { get; set; } = VideoEncodingQuality.HD1080p;
+
+        public uint? Bitrate { get; set; }
+
+        public uint? FrameRate { get; set; }
     }
 }

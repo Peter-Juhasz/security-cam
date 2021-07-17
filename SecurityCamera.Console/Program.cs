@@ -36,7 +36,8 @@ namespace SecurityCamera.Console
                     services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));
 
                     // recording
-                    services.Configure<EncodingOptions>(context.Configuration.GetSection("Encoding"));
+                    services.Configure<VideoEncodingOptions>(context.Configuration.GetSection("Video"));
+                    services.Configure<AudioEncodingOptions>(context.Configuration.GetSection("Audio"));
                     services.Configure<RecordingOptions>(context.Configuration.GetSection("Recording"));
                     services.AddHostedService<RecordingWorker>();
                 })

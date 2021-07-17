@@ -26,7 +26,8 @@ namespace SecurityCamera.Console
             IOptions<RecordingOptions> recordingOptions,
             IOptions<FaceDetectionOptions> faceDetectionOptions,
             IOptions<BlobsOptions> blobsOptions,
-            IOptions<EncodingOptions> encodingOptions,
+            IOptions<VideoEncodingOptions> videoEncodingOptions,
+            IOptions<AudioEncodingOptions> audioEncodingOptions,
             IOptions<WakeOptions> wakeOptions,
             ILogger<RecordingWorker> logger
         )
@@ -35,7 +36,8 @@ namespace SecurityCamera.Console
             RecordingOptions = recordingOptions;
             FaceDetectionOptions = faceDetectionOptions;
             BlobsOptions = blobsOptions;
-            EncodingOptions = encodingOptions;
+            VideoEncodingOptions = videoEncodingOptions;
+            AudioEncodingOptions = audioEncodingOptions;
             WakeOptions = wakeOptions;
             Logger = logger;
         }
@@ -44,7 +46,8 @@ namespace SecurityCamera.Console
         private IOptions<RecordingOptions> RecordingOptions { get; }
         private IOptions<FaceDetectionOptions> FaceDetectionOptions { get; }
         private IOptions<BlobsOptions> BlobsOptions { get; }
-        private IOptions<EncodingOptions> EncodingOptions { get; }
+        private IOptions<VideoEncodingOptions> VideoEncodingOptions { get; }
+        public IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
         public IOptions<WakeOptions> WakeOptions { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
@@ -70,14 +73,40 @@ namespace SecurityCamera.Console
 
                 // set up encoding
                 Logger.LogInformation($"Initializing encoding...");
-                var encodingOptions = EncodingOptions.Value;
-                var profile = encodingOptions.Format switch
+                var videoEncodingOptions = VideoEncodingOptions.Value;
+                var profile = videoEncodingOptions.Format switch
                 {
-                    "HEVC" => MediaEncodingProfile.CreateHevc(encodingOptions.Quality),
-                    "MP4" => MediaEncodingProfile.CreateMp4(encodingOptions.Quality),
-                    "WMV" => MediaEncodingProfile.CreateWmv(encodingOptions.Quality),
-                    _ => throw new NotSupportedException($"Encoding format '{encodingOptions.Format}' is not supported.")
+                    "HEVC" => MediaEncodingProfile.CreateHevc(videoEncodingOptions.Quality),
+                    "MP4" => MediaEncodingProfile.CreateMp4(videoEncodingOptions.Quality),
+                    "WMV" => MediaEncodingProfile.CreateWmv(videoEncodingOptions.Quality),
+                    _ => throw new NotSupportedException($"Encoding format '{videoEncodingOptions.Format}' is not supported.")
                 };
+                if (videoEncodingOptions.Bitrate is uint videoBitrate)
+                {
+                    profile.Video.Bitrate = videoBitrate;
+                }
+                if (videoEncodingOptions.FrameRate is uint frameRate)
+                {
+                    profile.Video.FrameRate.Numerator = frameRate;
+                    profile.Video.FrameRate.Denominator = 1;
+                }
+
+                var audioEncodingOptions = AudioEncodingOptions.Value;
+                if (audioEncodingOptions.Enabled == false)
+                {
+                    profile.SetAudioTracks(Array.Empty<AudioStreamDescriptor>());
+                }
+                else
+                {
+                    if (audioEncodingOptions.Bitrate is uint audioBitrate)
+                    {
+                        profile.Audio.Bitrate = audioBitrate;
+                    }
+                    if (audioEncodingOptions.BitsPerSample is uint bitsPerSample)
+                    {
+                        profile.Audio.BitsPerSample = bitsPerSample;
+                    }
+                }
 
                 // record
                 Logger.LogInformation($"Initializing media capture...");
