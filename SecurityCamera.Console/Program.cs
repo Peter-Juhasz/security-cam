@@ -6,7 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using Polly.Retry;
+using Polly;
+
 using System;
+using System.Net.Http;
+using System.Net.Sockets;
 
 namespace SecurityCamera.Console
 {
@@ -54,7 +59,7 @@ namespace SecurityCamera.Console
                     }
                     if (context.Configuration.GetSection("WebHook").Exists() && context.Configuration.GetSection("WebHook")[nameof(WebHookOptions.FaceDetectionUrl)] != null)
                     {
-                        services.AddHttpClient(nameof(WebHookFaceDetectionSink));
+                        services.AddHttpClient(nameof(WebHookFaceDetectionSink)).AddPolicyHandler(WebHookRetryPolicy);
                         services.AddSingleton<IFaceDetectionSink, WebHookFaceDetectionSink>();
                     }
 
@@ -67,7 +72,7 @@ namespace SecurityCamera.Console
                     }
                     if (context.Configuration.GetSection("WebHook").Exists() && context.Configuration.GetSection("WebHook")[nameof(WebHookOptions.FocusChangeUrl)] != null)
                     {
-                        services.AddHttpClient(nameof(WebHookFocusChangeSink));
+                        services.AddHttpClient(nameof(WebHookFocusChangeSink)).AddPolicyHandler(WellKnownRetryPolicies.Default);
                         services.AddSingleton<IFocusChangeSink, WebHookFocusChangeSink>();
                     }
 
@@ -82,5 +87,28 @@ namespace SecurityCamera.Console
                 })
                 .UseConsoleLifetime()
             ;
+
+        public static readonly AsyncRetryPolicy<HttpResponseMessage> WebHookRetryPolicy = Policy
+            .Handle<HttpRequestException>()
+            .OrResult<HttpResponseMessage>(m =>
+                m.StatusCode is (
+                    HttpStatusCode.RequestTimeout or
+                    HttpStatusCode.ServiceUnavailable or
+                    HttpStatusCode.GatewayTimeout or
+                    HttpStatusCode.InternalServerError or
+                    HttpStatusCode.TooManyRequests
+                )
+            )
+            .Or<SocketException>()
+            .Or<TimeoutException>()
+            .WaitAndRetryAsync(new[]
+            {
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(3),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMinutes(1),
+            });
     }
 }
