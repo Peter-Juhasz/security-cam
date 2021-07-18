@@ -126,7 +126,8 @@ namespace SecurityCamera.Console
                 {
                     // resize
                     var newSize = (int)(_blobSize * Options.ResizeFactor);
-                    Logger.LogInformation($"Resizing blob to {newSize}...");
+                    Logger.LogInformation($"Resizing blob to {newSize:N0}...");
+                    await FlushAsync(c);
                     await Client.ResizeAsync(newSize, cancellationToken: c);
                     _blobSize = newSize;
                     await OpenAtPositionAsync(_position, c);
@@ -257,7 +258,7 @@ namespace SecurityCamera.Console
                     var optimalSize = Size + padding;
                     if (_blobSize != optimalSize)
                     {
-                        Logger.LogInformation($"Resizing blob to {optimalSize}...");
+                        Logger.LogInformation($"Resizing blob to {optimalSize:N0}...");
                         await Client.ResizeAsync(optimalSize);
                     }
                 }

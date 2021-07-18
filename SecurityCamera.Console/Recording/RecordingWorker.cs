@@ -183,7 +183,14 @@ namespace SecurityCamera.Console
                                 remainingTime = maximumRemainingTime;
                             }
                         }
-                        await Task.Delay(remainingTime, cancellationToken);
+                        try
+                        {
+                            await Task.Delay(remainingTime, cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Logger.LogInformation("Recording cancelled.");
+                        }
 
                         // stop
                         Logger.LogInformation($"Stopping recording...");

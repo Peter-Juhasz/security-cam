@@ -2,7 +2,9 @@
 Records and encodes video to HEVC/MP4 using hardware acceleration, uploads to Azure Blob Storage, detects faces and sends notifications.
 
 ## Usage
-Run `SecurityCamera.Console.exe`.
+1. Create Azure Storage account
+2. Set in configuration
+3. Run `SecurityCamera.Console.exe`.
 
 ### Configuration
 Configuration is stored in `appsettings.json` or can be added as CLI arguments.
@@ -19,13 +21,13 @@ Recording
   - `BitsPerSample`: the number of bits per audio sample
 - `Recording`
   - `ChunkSize`: size of video chunks (default `"00:10:00"`)
-  - `MaximumRecordTime`: maximum time to record (default `null`)
+  - `MaximumRecordTime`: maximum of total record time, shut down after that time passed (default `null`)
 - `Blobs`
   - **`ConnectionString`**: the connection string for the Storage Account
   - `ContainerName`: the name of the container to upload blobs (default `"recordings"`)
-  - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MB`)
+  - `BufferSize`: the size of the buffer to write the blob (default `null`, defaults to library default which is `4 MiB`)
   - `BlobNameFormat`: format used for naming blobs, with argument `DateTimeOffset` at index `0` (default `"{0:yyyy/MM/dd/HH-mm-ss}.mp4"`)
-  - `InitialSizeHint`: initial size of Page Blob in bytes (default: 32 MiB)
+  - `InitialSizeHint`: initial size of Page Blob in bytes (default: 64 MiB)
   - `ResizeFactor`: the factor to resize a Page Blob when its size limit is exceeded (default `2.0`)
 - `Wake`
   - `Enabled`: keep computer from sleep during recording (default: `true`)
@@ -124,7 +126,7 @@ displayRequest.RequestRelease();
 ```
 
 ### How to send SMS
-You can use [Azure Communication Service](https://azure.microsoft.com/en-us/services/communication-services/) to send SMS:
+You can use [Azure Communication Services](https://azure.microsoft.com/en-us/services/communication-services/) to send SMS:
 ```cs
 var client = new SmsClient();
 await client.SendAsync(from, to, message);
