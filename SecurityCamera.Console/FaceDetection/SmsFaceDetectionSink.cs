@@ -15,12 +15,15 @@ namespace SecurityCamera.Console
     {
         public async ValueTask OnFaceDetectionChangedAsync(FaceDetectionEffectFrame frame, SoftwareBitmap snapshot)
         {
-            var options = Options.Value;
-            Logger.LogInformation($"Sending SMS to '{String.Join(", ", options.To)}'...");
-            var response = await Client.SendAsync(options.From, options.To, "Face detected!");
-            foreach (var item in response.Value)
+            if (frame.DetectedFaces.Count > 0)
             {
-                Logger.LogInformation($"Sending SMS to '{item.To}' was {(item.Successful ? "successful" : "failed")} with message ID '{item.MessageId}'.");
+                var options = Options.Value;
+                Logger.LogInformation($"Sending SMS to '{String.Join(", ", options.To)}'...");
+                var response = await Client.SendAsync(options.From, options.To, $"Face detected! ({frame.DetectedFaces.Count} total)");
+                foreach (var item in response.Value)
+                {
+                    Logger.LogInformation($"Sending SMS to '{item.To}' was {(item.Successful ? "successful" : "failed")} with message ID '{item.MessageId}'.");
+                }
             }
         }
     }

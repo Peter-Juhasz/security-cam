@@ -2,7 +2,7 @@
 
 namespace SecurityCamera.Console
 {
-    class VideoEncodingOptions
+    class VideoOptions
     {
         public string Format { get; set; } = "HEVC";
 

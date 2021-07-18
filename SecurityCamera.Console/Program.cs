@@ -31,29 +31,52 @@ namespace SecurityCamera.Console
                         sp.GetRequiredService<IOptions<BlobsOptions>>().Value.ConnectionString
                     ));
 
+                    // sms
+                    if (context.Configuration.GetSection("Sms").Exists())
+                    {
+                        services.Configure<SmsOptions>(context.Configuration.GetSection("Sms"));
+                        services.AddSingleton<SmsClient>(sp => new SmsClient(sp.GetRequiredService<IOptions<SmsOptions>>().Value.ConnectionString));
+                    }
+
+                    // webhook
+                    if (context.Configuration.GetSection("WebHook").Exists())
+                    {
+                        services.Configure<WebHookOptions>(context.Configuration.GetSection("WebHook"));
+                    }
+
                     // face detection
                     services.Configure<FaceDetectionOptions>(context.Configuration.GetSection("FaceDetection"));
                     services.AddSingleton<IFaceDetectionSink, LoggerFaceDetectionSink>();
                     services.AddSingleton<IFaceDetectionSink, ApplicationInsightsFaceDetectionSink>();
                     if (context.Configuration.GetSection("Sms").Exists())
                     {
-                        services.Configure<SmsOptions>(context.Configuration.GetSection("Sms"));
-                        services.AddSingleton<SmsClient>(sp => new SmsClient(sp.GetRequiredService<IOptions<SmsOptions>>().Value.ConnectionString));
                         services.AddSingleton<IFaceDetectionSink, SmsFaceDetectionSink>();
                     }
-                    if (context.Configuration.GetSection("WebHook").Exists())
+                    if (context.Configuration.GetSection("WebHook").Exists() && context.Configuration.GetSection("WebHook")[nameof(WebHookOptions.FaceDetectionUrl)] != null)
                     {
-                        services.Configure<WebHookOptions>(context.Configuration.GetSection("WebHook"));
                         services.AddHttpClient(nameof(WebHookFaceDetectionSink));
                         services.AddSingleton<IFaceDetectionSink, WebHookFaceDetectionSink>();
+                    }
+
+                    // focus
+                    services.AddSingleton<IFocusChangeSink, LoggerFocusChangeSink>();
+                    services.AddSingleton<IFocusChangeSink, ApplicationInsightsFocusChangeSink>();
+                    if (context.Configuration.GetSection("Sms").Exists())
+                    {
+                        services.AddSingleton<IFocusChangeSink, SmsFocusChangeSink>();
+                    }
+                    if (context.Configuration.GetSection("WebHook").Exists() && context.Configuration.GetSection("WebHook")[nameof(WebHookOptions.FocusChangeUrl)] != null)
+                    {
+                        services.AddHttpClient(nameof(WebHookFocusChangeSink));
+                        services.AddSingleton<IFocusChangeSink, WebHookFocusChangeSink>();
                     }
 
                     // wake
                     services.Configure<WakeOptions>(context.Configuration.GetSection("Wake"));
 
                     // recording
-                    services.Configure<VideoEncodingOptions>(context.Configuration.GetSection("Video"));
-                    services.Configure<AudioEncodingOptions>(context.Configuration.GetSection("Audio"));
+                    services.Configure<VideoOptions>(context.Configuration.GetSection("Video"));
+                    services.Configure<AudioOptions>(context.Configuration.GetSection("Audio"));
                     services.Configure<RecordingOptions>(context.Configuration.GetSection("Recording"));
                     services.AddHostedService<RecordingWorker>();
                 })

@@ -4,6 +4,8 @@ namespace SecurityCamera.Console
 {
     class WebHookOptions
     {
-        public Uri Url { get; set; } = null!;
+        public Uri? FaceDetectionUrl { get; set; }
+
+        public Uri? FocusChangeUrl { get; set; }
     }
 }

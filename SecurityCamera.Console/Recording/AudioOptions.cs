@@ -1,6 +1,6 @@
 ﻿namespace SecurityCamera.Console
 {
-    class AudioEncodingOptions
+    class AudioOptions
     {
         public bool Enabled { get; set; } = true;
 

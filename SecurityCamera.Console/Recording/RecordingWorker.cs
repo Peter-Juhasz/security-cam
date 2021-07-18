@@ -25,10 +25,11 @@ namespace SecurityCamera.Console
             IOptions<RecordingOptions> recordingOptions,
             IOptions<FaceDetectionOptions> faceDetectionOptions,
             IOptions<BlobsOptions> blobsOptions,
-            IOptions<VideoEncodingOptions> videoEncodingOptions,
-            IOptions<AudioEncodingOptions> audioEncodingOptions,
+            IOptions<VideoOptions> videoEncodingOptions,
+            IOptions<AudioOptions> audioEncodingOptions,
             IOptions<WakeOptions> wakeOptions,
             IEnumerable<IFaceDetectionSink> faceDetectionSinks,
+            IEnumerable<IFocusChangeSink> focusChangeSinks,
             ILogger<PageBlobRandomAccessStream> streamLogger,
             ILogger<RecordingWorker> logger
         )
@@ -41,6 +42,7 @@ namespace SecurityCamera.Console
             AudioEncodingOptions = audioEncodingOptions;
             WakeOptions = wakeOptions;
             FaceDetectionSinks = faceDetectionSinks;
+            FocusChangeSinks = focusChangeSinks;
             StreamLogger = streamLogger;
             Logger = logger;
         }
@@ -49,10 +51,11 @@ namespace SecurityCamera.Console
         private IOptions<RecordingOptions> RecordingOptions { get; }
         private IOptions<FaceDetectionOptions> FaceDetectionOptions { get; }
         private IOptions<BlobsOptions> BlobsOptions { get; }
-        private IOptions<VideoEncodingOptions> VideoEncodingOptions { get; }
-        private IOptions<AudioEncodingOptions> AudioEncodingOptions { get; }
+        private IOptions<VideoOptions> VideoEncodingOptions { get; }
+        private IOptions<AudioOptions> AudioEncodingOptions { get; }
         private IOptions<WakeOptions> WakeOptions { get; }
         private IEnumerable<IFaceDetectionSink> FaceDetectionSinks { get; }
+        private IEnumerable<IFocusChangeSink> FocusChangeSinks { get; }
         private ILogger<PageBlobRandomAccessStream> StreamLogger { get; }
         private ILogger<RecordingWorker> Logger { get; }
 
@@ -245,9 +248,19 @@ namespace SecurityCamera.Console
             Logger.LogWarning($"Record limitation exceeded.");
         }
 
-        private void OnCaptureFocusChanged(MediaCapture sender, MediaCaptureFocusChangedEventArgs args)
+        private async void OnCaptureFocusChanged(MediaCapture sender, MediaCaptureFocusChangedEventArgs args)
         {
-            Logger.LogInformation($"Focus changed to '{args.FocusState}'");
+            foreach (var sink in FocusChangeSinks)
+            {
+                try
+                {
+                    await sink.OnFocusStateChangedAsync(args.FocusState);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Focus change sink of type '{sink.GetType()}' has failed.");
+                }
+            }
         }
 
         private void OnCaptureFailed(MediaCapture sender, MediaCaptureFailedEventArgs errorEventArgs)

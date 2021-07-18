@@ -12,6 +12,7 @@
 		<PackageReference Include="Azure.Communication.Sms" Version="1.*" />
 		<PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.*" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="5.*" />
+		<PackageReference Include="System.Net.Http.Json" Version="5.*" />
 	</ItemGroup>
 
 </Project>

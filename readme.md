@@ -42,10 +42,37 @@ Alerts
   - **`From`**: from number
   - **`To`**: array of to numbers
 - `WebHook`
-  - **`Url`**: url to call with POST
+  - `FaceDetectionUrl`: url to call
+  - `FocusChangeUrl`: url to call
 
 Telemetry
 - `ApplicationInsights`: configure Application Insights
+
+## Web hooks
+### Face detection
+The URL set in `WebHook`.`FaceDetectionUrl` is invoked with `POST` and content type `application/json`:
+```json
+{
+    "detectedFaces": [
+        {
+            "faceBox": {
+                "X": 123,
+                "Y": 456,
+                "Width": 240,
+                "Height": 240,
+            }
+        }
+    ]
+}
+```
+
+### Focus change
+The URL set in `WebHook`.`FocusChangeUrl` is invoked with `POST` and content type `application/json`:
+```json
+{
+    "state": "Focused"
+}
+```
 
 ## Tutorial
 ### How to record video
